@@ -238,7 +238,7 @@ struct table_info_struct
     LIST_BASE_NODE_T(field_info_t) field_lst;
 };
 
-enum enum_inception_optype { 
+enum enum_inception_optype {
     INCEPTION_TYPE_LOCAL,
     INCEPTION_TYPE_CHECK,
     INCEPTION_TYPE_EXECUTE,
@@ -252,6 +252,11 @@ struct source_info_struct
     char*        host;
     char*        password;
     char*        user;
+    char*        dnid; //中间件节点id hcc 2018-6-22
+
+    char*        backup_host; // 在使用ssh跳板机时,真实主机  hcc 2018-8-23
+    uint        backup_port; // 在使用ssh跳板机时,真实端口  hcc 2018-8-23
+
     uint        port;
     uint        check;//check or execute
     uint        execute;
@@ -270,6 +275,11 @@ struct source_info_space_struct
     char        host[HOSTNAME_LENGTH + 1];
     char        password[MAX_PASSWORD_LENGTH + 1];
     char        user[USERNAME_CHAR_LENGTH + 1];
+    char        dnid[4+1];
+
+    char        backup_host[HOSTNAME_LENGTH + 1];
+    uint        backup_port;
+
     uint        port;
     uint        check;//check or execute
     uint        force;//force to execute though exist error before
@@ -306,7 +316,7 @@ struct sql_cache_node_struct
     int         use_osc;
     str_t*      stagereport;
     my_ulonglong   affected_rows;
-    char        execute_time[NAME_CHAR_LEN]; //执行所用时间 
+    char        execute_time[NAME_CHAR_LEN]; //执行所用时间
     char        sqlsha1[CRYPT_MAX_PASSWORD_SIZE + 1];
     int         ignore;//for statement ignore, eg. alter ignore table ...
     str_t*      oscoutput;
@@ -316,7 +326,7 @@ struct sql_cache_node_struct
     LIST_NODE_T(sql_cache_node_t) link;
 };
 
-void osc_prepend_PATH ( const char* path, THD* thd, sql_cache_node_t* node); 
+void osc_prepend_PATH ( const char* path, THD* thd, sql_cache_node_t* node);
 class process
 {
 private:
@@ -340,7 +350,7 @@ public:
 };
 
 typedef struct osc_percent_cache_struct osc_percent_cache_t;
-struct osc_percent_cache_struct 
+struct osc_percent_cache_struct
 {
     char        sqlsha1[CRYPT_MAX_PASSWORD_SIZE + 1];
     uint        percent;
@@ -354,7 +364,7 @@ struct osc_percent_cache_struct
 };
 
 typedef struct osc_cache_struct osc_cache_t;
-struct osc_cache_struct 
+struct osc_cache_struct
 {
     LIST_BASE_NODE_T(osc_percent_cache_t) osc_lst;
 };
@@ -390,7 +400,7 @@ typedef struct split_table_struct split_table_t;
 struct split_table_struct
 {
     LIST_NODE_T(split_table_t)              link;
-    
+
     char                                    dbname[FN_REFLEN];
     char                                    tablename[FN_REFLEN];
     int                                     sqltype;
@@ -401,7 +411,7 @@ struct split_cache_node_struct
 {
     str_t                                  sql_statements;
     int                                     ddlflag;
-    
+
     LIST_NODE_T(split_cache_node_t)         link;
 };
 
@@ -415,19 +425,19 @@ struct split_cache_struct
 
 
 typedef struct table_rt_struct table_rt_t;
-struct table_rt_struct 
+struct table_rt_struct
 {
     table_info_t*     table_info;
     char              alias[FN_LEN];
-    
+
     LIST_NODE_T(table_rt_t)         link;
 };
 
 typedef struct check_rt_struct check_rt_t;
-struct check_rt_struct 
+struct check_rt_struct
 {
     void*             select_lex;
-    
+
     LIST_BASE_NODE_T(table_rt_t)            table_rt_lst;
     LIST_NODE_T(check_rt_t)                 link;
 };
@@ -441,7 +451,7 @@ struct query_print_cache_node_struct
     str_t*                                  errmsg;
 
     rt_lst_t                                rt_lst;
-    
+
     LIST_NODE_T(query_print_cache_node_t)         link;
 };
 
@@ -3240,7 +3250,7 @@ public:
 
   char* sql_statement;//±Ì æ¡Ÿ ±¥Ê¥¢’Ê’˝µƒsql”Ôæ‰£¨“≤æÕ «»•µÙ‘¥–≈œ¢µƒ≤ø∑÷
   int have_begin;
-  
+
   sql_statistic_t sql_statistic;
   sql_cache_t* sql_cache;
   split_cache_t* split_cache;
