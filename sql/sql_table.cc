@@ -27,8 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 #include "sql_base.h"   // open_table_uncached, lock_table_names
 #include "lock.h"       // mysql_unlock_tables
 #include "strfunc.h"    // find_type2, find_set
-#include "sql_view.h" // view_checksum 
-#include "sql_truncate.h"                       // regenerate_locked_table 
+#include "sql_view.h" // view_checksum
+#include "sql_truncate.h"                       // regenerate_locked_table
 #include "sql_partition.h"                      // mem_alloc_error,
 // generate_partition_syntax,
 // partition_info
@@ -135,7 +135,7 @@ static char* add_identifier(THD* thd, char *to_p, const char * end_p,
 			if (!length)
 				length= 1;
 			if (length == 1 && *conv_name == (char) quote)
-			{ 
+			{
 				if ((end_p - to_p) < 3)
 					break;
 				*(to_p++)= (char) quote;
@@ -424,7 +424,7 @@ uint filename_to_tablename(const char *from, char *to, uint to_length
 /**
 Check if given string begins with "#mysql50#" prefix
 
-@param   name          string to check cut 
+@param   name          string to check cut
 
 @retval
 FALSE  no prefix found
@@ -434,7 +434,7 @@ TRUE   prefix found
 
 bool check_mysql50_prefix(const char *name)
 {
-	return (name[0] == '#' && 
+	return (name[0] == '#' &&
 		!strncmp(name, MYSQL50_TABLE_NAME_PREFIX,
 		MYSQL50_TABLE_NAME_PREFIX_LENGTH));
 }
@@ -443,7 +443,7 @@ bool check_mysql50_prefix(const char *name)
 /**
 Check if given string begins with "#mysql50#" prefix, cut it if so.
 
-@param   from          string to check and cut 
+@param   from          string to check and cut
 @param   to[out]       buffer for result string
 @param   to_length     its size
 
@@ -484,12 +484,12 @@ uint tablename_to_filename(const char *from, char *to, uint to_length)
 	if ((length= check_n_cut_mysql50_prefix(from, to, to_length)))
 	{
 		/*
-		Check if the name supplied is a valid mysql 5.0 name and 
+		Check if the name supplied is a valid mysql 5.0 name and
 		make the name a zero length string if it's not.
-		Note that just returning zero length is not enough : 
-		a lot of places don't check the return value and expect 
+		Note that just returning zero length is not enough :
+		a lot of places don't check the return value and expect
 		a zero terminated string.
-		*/  
+		*/
 		if (check_table_name(to, length, TRUE) != IDENT_NAME_OK)
 		{
 			to[0]= 0;
@@ -652,7 +652,7 @@ uint build_tmptable_filename(THD* thd, char *buff, size_t bufflen)
 @details Make a shadow file name used by ALTER TABLE to construct the
 modified table (with keeping the original). The modified table is then
 moved back as original table. The name must start with the temp file
-prefix so it gets filtered out by table files listing routines. 
+prefix so it gets filtered out by table files listing routines.
 
 @param[out] buff      buffer to receive the constructed name
 @param      bufflen   size of buff
@@ -661,7 +661,7 @@ prefix so it gets filtered out by table files listing routines.
 @retval     path length
 */
 
-uint build_table_shadow_filename(char *buff, size_t bufflen, 
+uint build_table_shadow_filename(char *buff, size_t bufflen,
 	ALTER_PARTITION_PARAM_TYPE *lpt)
 {
 	char tmp_name[FN_REFLEN];
@@ -1072,7 +1072,7 @@ FN_IS_TMP : 0);
 			if (!dont_log_query)
 			{
 				/*
-				Note that unless if_exists is TRUE or a temporary table was deleted, 
+				Note that unless if_exists is TRUE or a temporary table was deleted,
 				there is no means to know if the statement should be written to the
 				binary log. See further information on this variable in what follows.
 				*/
@@ -1143,7 +1143,7 @@ FN_IS_TMP : 0);
 				!dont_log_query);
 
 			/* No error if non existent table and 'IF EXIST' clause or view */
-			if ((error == ENOENT || error == HA_ERR_NO_SUCH_TABLE) && 
+			if ((error == ENOENT || error == HA_ERR_NO_SUCH_TABLE) &&
 				(if_exists || table_type == NULL))
 			{
 				error= 0;
@@ -1438,7 +1438,7 @@ bool check_duplicates_in_interval(const char *set_or_name,
 	TYPELIB tmp= *typelib;
 	const char **cur_value= typelib->type_names;
 	unsigned int *cur_length= typelib->type_lengths;
-	*dup_val_count= 0;  
+	*dup_val_count= 0;
 
 	for ( ; tmp.count > 1; cur_value++, cur_length++)
 	{
@@ -1522,8 +1522,8 @@ RETURN VALUES
 
 int prepare_create_field(
     THD* thd,
-    Create_field *sql_field, 
-	uint *blob_columns, 
+    Create_field *sql_field,
+	uint *blob_columns,
 	longlong table_flags)
 {
 	unsigned int dup_val_count;
@@ -1591,7 +1591,7 @@ int prepare_create_field(
 		sql_field->pack_flag=f_settype((uint) sql_field->sql_type);
 		break;
 	case MYSQL_TYPE_BIT:
-		/* 
+		/*
 		We have sql_field->pack_flag already set here, see
 		mysql_prepare_create_table().
 		*/
@@ -1928,6 +1928,8 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
 	List_iterator<Create_field> it(alter_info->create_list);
 	List_iterator<Create_field> it2(alter_info->create_list);
 	uint total_uneven_bit_length= 0;
+
+	MYSQL*          mysql;
 	DBUG_ENTER("mysql_prepare_create_table");
 
 	select_field_pos= alter_info->create_list.elements - select_field_count;
@@ -1948,9 +1950,9 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
 		*/
 		sql_field->length= sql_field->char_length;
 
-        if (sql_field->charset && sql_field->sql_type != MYSQL_TYPE_BLOB && 
+        if (sql_field->charset && sql_field->sql_type != MYSQL_TYPE_BLOB &&
                 sql_field->sql_type != MYSQL_TYPE_LONG_BLOB &&
-                sql_field->sql_type != MYSQL_TYPE_TINY_BLOB && 
+                sql_field->sql_type != MYSQL_TYPE_TINY_BLOB &&
                 sql_field->sql_type != MYSQL_TYPE_MEDIUM_BLOB)
         {
             my_error(ER_CHARSET_ON_COLUMN, MYF(0), sql_field->field_name, tablename);
@@ -1975,7 +1977,7 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
           sql_field->charset = system_charset_info;
         }
 
-        mysql_check_column_default(thd, sql_field->def, sql_field->flags, 
+        mysql_check_column_default(thd, sql_field->def, sql_field->flags,
             NULL, sql_field->field_name, sql_field->sql_type);
         if (mysql_field_check(thd, sql_field,tablename))
           DBUG_RETURN(TRUE);
@@ -2058,14 +2060,14 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
     {
       if (key->columns.elements > inception_max_primary_key_parts)
       {
-          my_error(ER_PK_TOO_MANY_PARTS, MYF(0), 
-              thd->lex->select_lex.table_list.first->db, tablename, 
+          my_error(ER_PK_TOO_MANY_PARTS, MYF(0),
+              thd->lex->select_lex.table_list.first->db, tablename,
               inception_max_primary_key_parts);
                 mysql_errmsg_append(thd);
       }
 			pk_count++;
     }
-		
+
 		(*key_count)++;
 
 		if (check_string_char_length(&key->name, "", NAME_CHAR_LEN,
@@ -2087,7 +2089,7 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
 		my_error(ER_TABLE_MUST_HAVE_PK,MYF(0), tablename);
         mysql_errmsg_append(thd);
 	}
-	
+
 	if (*key_count > inception_max_keys)
 	{
 		my_error(ER_TOO_MANY_KEYS,MYF(0), tablename, inception_max_keys);
@@ -2172,7 +2174,7 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
               sql_field->sql_type != MYSQL_TYPE_LONG &&
               inception_enable_pk_columns_only_int)
           {
-              my_error(ER_PK_COLS_NOT_INT, MYF(0), column->field_name.str, 
+              my_error(ER_PK_COLS_NOT_INT, MYF(0), column->field_name.str,
                   thd->lex->select_lex.table_list.first->db, tablename);
                     mysql_errmsg_append(thd);
           }
@@ -2213,17 +2215,17 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
 
 			if (column->length)
 			{
-				// Catch invalid use of partial keys 
+				// Catch invalid use of partial keys
 				if (!f_is_geom(sql_field->pack_flag) &&
-					// is the key partial? 
+					// is the key partial?
 					column->length != length &&
-					// is prefix length bigger than field length? 
+					// is prefix length bigger than field length?
 					(column->length > length ||
-					// can the field have a partial key? 
+					// can the field have a partial key?
 					!Field::type_can_have_key_part (sql_field->sql_type) ||
 					// a packed field can't be used in a partial key
 					f_is_packed(sql_field->pack_flag)))
-				{         
+				{
 					my_message(ER_WRONG_SUB_KEY, ER(ER_WRONG_SUB_KEY), MYF(0));
                     mysql_errmsg_append(thd);
 				}
@@ -2274,11 +2276,35 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
 		if (!(key_info->flags & HA_NULL_PART_KEY))
 			unique_key=1;
 		key_info->key_length=(uint16) key_length;
-		if (key_length > max_key_length && key->type != Key::FULLTEXT)
-		{
-			my_error(ER_TOO_LONG_KEY,MYF(0),key->name.str,max_key_length);
-            mysql_errmsg_append(thd);
-		}
+
+		mysql= thd->get_audit_connection();
+	    if (mysql == NULL)
+	    {
+	        mysql_errmsg_append(thd);
+	        DBUG_RETURN(TRUE);
+	    }
+		// if (key_length > max_key_length && key->type != Key::FULLTEXT)
+		// {
+		// 	my_error(ER_TOO_LONG_KEY,MYF(0),key->name.str,max_key_length);
+		// 	mysql_errmsg_append(thd);
+		// }
+
+        // 如果是5.6版本,最长度就是767. 如果不是该版本,总长度为3072. 2018-12-26 hcc
+        if (strncmp(mysql->server_version, "5.7", 3) == 0){
+            if (key_length > 3072 && key->type != Key::FULLTEXT)
+            {
+                my_error(ER_TOO_LONG_KEY,MYF(0),key->name.str, 3072);
+                mysql_errmsg_append(thd);
+            }
+        }
+        else {
+            if (key_length > max_key_length && key->type != Key::FULLTEXT)
+            {
+                my_error(ER_TOO_LONG_KEY,MYF(0),key->name.str, max_key_length);
+                mysql_errmsg_append(thd);
+            }
+        }
+
 		if (validate_comment_length(thd, key->key_create_info.comment.str,
 			&key->key_create_info.comment.length,
 			INDEX_COMMENT_MAXLEN,
@@ -2427,9 +2453,9 @@ static void sp_prepare_create_field(THD *thd, Create_field *sql_field)
 		if (sql_field->sql_type == MYSQL_TYPE_SET)
 		{
 			calculate_interval_lengths(sql_field->charset,
-				sql_field->interval, &dummy, 
+				sql_field->interval, &dummy,
 				&field_length);
-			sql_field->length= field_length + 
+			sql_field->length= field_length +
 				(sql_field->interval->count - 1);
 		}
 		else /* MYSQL_TYPE_ENUM */
@@ -2785,8 +2811,8 @@ TRUE  error
 //   bool is_trans= FALSE;
 //   uint not_used;
 //   DBUG_ENTER("mysql_create_like_table");
-// 
-// 
+//
+//
 //   /*
 //     We the open source table to get its description in HA_CREATE_INFO
 //     and Alter_info objects. This also acquires a shared metadata lock
@@ -2801,9 +2827,9 @@ TRUE  error
 //   if (open_tables(thd, &thd->lex->query_tables, &not_used, 0))
 //     goto err;
 //   src_table->table->use_all_columns();
-// 
+//
 //   DEBUG_SYNC(thd, "create_table_like_after_open");
-// 
+//
 //   /* Fill HA_CREATE_INFO and Alter_info with description of source table. */
 //   memset(&local_create_info, 0, sizeof(local_create_info));
 //   local_create_info.db_type= src_table->table->s->db_type();
@@ -2816,11 +2842,11 @@ TRUE  error
 //   if (src_table->table->part_info)
 //     thd->work_part_info= src_table->table->part_info->get_clone();
 // #endif
-// 
+//
 //   /*
 //     Adjust description of source table before using it for creation of
 //     target table.
-// 
+//
 //     Similarly to SHOW CREATE TABLE we ignore MAX_ROWS attribute of
 //     temporary table which represents I_S table.
 //   */
@@ -2839,12 +2865,12 @@ TRUE  error
 //   */
 //   local_create_info.data_file_name= local_create_info.index_file_name= NULL;
 //   local_create_info.alias= create_info->alias;
-// 
+//
 //   if ((res= mysql_create_table_no_lock(thd, table->db, table->table_name,
 //                                        &local_create_info, &local_alter_info,
 //                                        0, &is_trans)))
 //     goto err;
-// 
+//
 //   /*
 //     Ensure that we have an exclusive lock on target table if we are creating
 //     non-temporary table. In LOCK TABLES mode the only way the table is locked,
@@ -2861,9 +2887,9 @@ TRUE  error
 //                thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db,
 //                                               table->table_name,
 //                                               MDL_SHARED_NO_WRITE)));
-// 
+//
 //   DEBUG_SYNC(thd, "create_table_like_before_binlog");
-// 
+//
 //   /*
 //     CREATE TEMPORARY TABLE doesn't terminate a transaction. Calling
 //     stmt.mark_created_temp_table() guarantees the transaction can be binlogged
@@ -2871,7 +2897,7 @@ TRUE  error
 //   */
 //   if (create_info->options & HA_LEX_CREATE_TMP_TABLE)
 //     thd->transaction.stmt.mark_created_temp_table();
-// 
+//
 //   /*
 //     We have to write the query before we unlock the tables.
 //   */
@@ -2882,7 +2908,7 @@ TRUE  error
 //        replication, CREATE TABLE ... LIKE ... needs special
 //        treatement.  We have four cases to consider, according to the
 //        following decision table:
-// 
+//
 //            ==== ========= ========= ==============================
 //            Case    Target    Source Write to binary log
 //            ==== ========= ========= ==============================
@@ -2901,7 +2927,7 @@ TRUE  error
 //         query.length(0);  // Have to zero it since constructor doesn't
 //         Open_table_context ot_ctx(thd, MYSQL_OPEN_REOPEN);
 //         bool new_table= FALSE; // Whether newly created table is open.
-// 
+//
 //         /*
 //           The condition avoids a crash as described in BUG#48506. Other
 //           binlogging problems related to CREATE TABLE IF NOT EXISTS LIKE
@@ -2923,15 +2949,15 @@ TRUE  error
 //               goto err;
 //             new_table= TRUE;
 //           }
-// 
+//
 //           int result __attribute__((unused))=
 //             store_create_info(thd, table, &query,
 //                               create_info, FALSE /* show_database */);
-// 
+//
 //           DBUG_ASSERT(result == 0); // store_create_info() always return 0
 //           if (write_bin_log(thd, TRUE, query.ptr(), query.length()))
 //             goto err;
-// 
+//
 //           if (new_table)
 //           {
 //             DBUG_ASSERT(thd->open_tables == table->table);
@@ -2954,7 +2980,7 @@ TRUE  error
 //   }
 //   else if (write_bin_log(thd, TRUE, thd->query(), thd->query_length(), is_trans))
 //     goto err;
-// 
+//
 // err:
 //   DBUG_RETURN(res);
 // }
@@ -4543,7 +4569,7 @@ bool
 					(cfield->field->field_length == key_part_length &&
 					!f_is_blob(key_part->key_type)) ||
 					(cfield->length && (((cfield->sql_type >= MYSQL_TYPE_TINY_BLOB &&
-					cfield->sql_type <= MYSQL_TYPE_BLOB) ? 
+					cfield->sql_type <= MYSQL_TYPE_BLOB) ?
 					blob_length_by_type(cfield->sql_type) :
 				cfield->length) <
 					key_part_length / key_part->field->charset()->mbmaxlen)))
@@ -5169,7 +5195,7 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
 		//       my_error(ER_BAD_LOG_STATEMENT, MYF(0), "ALTER");
 		//       DBUG_RETURN(true);
 		//     }
-		// 
+		//
 		/* Disable alter of log tables to unsupported engine */
 		if ((create_info->used_fields & HA_CREATE_USED_ENGINE) &&
 			(!create_info->db_type || /* unknown engine */
@@ -6160,7 +6186,7 @@ static int
 		if (to->s->primary_key != MAX_KEY && to->file->primary_key_is_clustered())
 		{
 			char warn_buff[MYSQL_ERRMSG_SIZE];
-			my_snprintf(warn_buff, sizeof(warn_buff), 
+			my_snprintf(warn_buff, sizeof(warn_buff),
 				"ORDER BY ignored as there is a user-defined clustered index"
 				" in the table '%-.192s'", from->s->table_name.str);
 			push_warning(thd, Sql_condition::WARN_LEVEL_WARN, ER_UNKNOWN_ERROR,
@@ -6238,7 +6264,7 @@ static int
 				Field *column= to->field[i];
 				if (column->has_insert_default_function())
 					column->evaluate_insert_default_function();
-			}            
+			}
 		}
 
 		error=to->file->ha_write_row(to->record[0]);
@@ -6451,9 +6477,9 @@ bool mysql_checksum_table(THD *thd, TABLE_LIST *tables,
 					{
 						if (thd->killed)
 						{
-							/* 
-							we've been killed; let handler clean up, and remove the 
-							partial current row from the recordset (embedded lib) 
+							/*
+							we've been killed; let handler clean up, and remove the
+							partial current row from the recordset (embedded lib)
 							*/
 							t->file->ha_rnd_end();
 							thd->protocol->remove_last_row();
@@ -6575,7 +6601,7 @@ static bool check_engine(THD *thd, const char *db_name,
 	}
 
 	/*
-	Check, if the given table name is system table, and if the storage engine 
+	Check, if the given table name is system table, and if the storage engine
 	does supports it.
 	*/
 	if ((create_info->used_fields & HA_CREATE_USED_ENGINE) &&
