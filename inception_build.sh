@@ -4,7 +4,7 @@ debug_dir=$1
 platform=$2
 
 if [ $# -eq 1 ]
-then 
+then
 	echo "building project in $1"
 	platform="x"
 elif [ $# -ne 2 ]
