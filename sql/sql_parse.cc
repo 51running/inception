@@ -53,6 +53,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
 // reset_mqh
 #include "sql_rename.h"       // mysql_rename_table
 #include <string.h>
+// #include <iostream>
+#include <sstream>
 #include "sql_tablespace.h"   // mysql_alter_tablespace
 #include "hostname.h"         // hostname_cache_refresh
 #include "sql_acl.h"          // *_ACL, check_grant, is_acl_user,
@@ -113,6 +115,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
 #include "sql_time.h"
 using std::max;
 using std::min;
+using std::stringstream;
 
 #define FLAGSTR(V,F) ((V)&(F)?#F" ":"")
 
@@ -9183,6 +9186,7 @@ int mysql_get_field_string(Field* field, String* backupsql, char* null_arr, int 
     String buffer((char*) buff,sizeof(buff),&my_charset_bin);
     String buffer2((char*) buff,sizeof(buff),&my_charset_bin);
     char* dupcharfield;
+    std::stringstream ss;
 
     // backupsql->append(separated);
 
@@ -9259,15 +9263,39 @@ int mysql_get_field_string(Field* field, String* backupsql, char* null_arr, int 
             }
         case MYSQL_TYPE_FLOAT:
             {
-                //    float nr;
-                //    nr= (float) field->val_real();
-                res=field->val_str(&buffer);
+                // res=field->val_str(&buffer);
+
+                float nr= field->val_real();
+                ss.clear(); // 清空
+                ss<<nr;
+
+                backupsql->append(ss.str().c_str());
+                append_flag = FALSE;
+                ss.str("");
+
                 break;
             }
         case MYSQL_TYPE_DOUBLE:
             {
-                res=field->val_str(&buffer);
-                //    double nr= field->val_real();
+                // res=field->val_str(&buffer);
+
+                // double nr= field->val_real();
+                // char  tmp_buf[MAX_FIELD_WIDTH];
+                // sprintf(tmp_buf, "%g",nr);
+
+                // backupsql->append(tmp_buf);
+                // append_flag = FALSE;
+
+
+                double nr= field->val_real();
+
+                ss.clear(); // 清空
+                ss<<nr;
+
+                backupsql->append(ss.str().c_str());
+                append_flag = FALSE;
+                ss.str("");
+
                 break;
             }
         case MYSQL_TYPE_DATETIME:
@@ -9321,8 +9349,8 @@ int mysql_execute_backup_info_insert_sql(
 
     DBUG_ENTER("mysql_execute_backup_info_insert_sql");
 
-    if (mysql_get_remote_backup_dbname(mi->thd->thd_sinfo->host,
-        mi->thd->thd_sinfo->port, sql_cache_node->dbname, dbname))
+    if (mysql_get_remote_backup_dbname(mi->thd->thd_sinfo->backup_host,
+        mi->thd->thd_sinfo->backup_port, sql_cache_node->dbname, dbname))
         DBUG_RETURN(false);
 
     backup_sql->append("INSERT INTO ");
@@ -9352,13 +9380,13 @@ int mysql_execute_backup_info_insert_sql(
     backup_sql->append(",");
     my_free(dupcharsql);
 
-    sprintf(tmp_buf, "\'%s\',", mi->thd->thd_sinfo->host);
+    sprintf(tmp_buf, "\'%s\',", mi->thd->thd_sinfo->backup_host);
     backup_sql->append(tmp_buf);
     sprintf(tmp_buf, "\'%s\',", sql_cache_node->table_info->db_name);
     backup_sql->append(tmp_buf);
     sprintf(tmp_buf, "\'%s\',", sql_cache_node->table_info->table_name);
     backup_sql->append(tmp_buf);
-    sprintf(tmp_buf, "%d,", mi->thd->thd_sinfo->port);
+    sprintf(tmp_buf, "%d,", mi->thd->thd_sinfo->backup_port);
     backup_sql->append(tmp_buf);
     backup_sql->append("NOW(),");
     switch(sql_cache_node->optype)
@@ -9368,9 +9396,11 @@ int mysql_execute_backup_info_insert_sql(
         backup_sql->append("\'INSERT\'");
         break;
     case SQLCOM_DELETE:
+    case SQLCOM_DELETE_MULTI:
         backup_sql->append("\'DELETE\'");
         break;
     case SQLCOM_UPDATE:
+    case SQLCOM_UPDATE_MULTI:
         backup_sql->append("\'UPDATE\'");
         break;
     case SQLCOM_CREATE_DB:
@@ -9849,9 +9879,9 @@ int mysql_parse_event_and_backup(
     DBUG_RETURN(err);
 }
 
-int mysql_fetch_thread_id(MYSQL *mysql, ulong* thread_id)
+int mysql_fetch_thread_id(THD* thd,MYSQL *mysql, ulong* thread_id)
 {
-    char set_format[32];
+    char set_format[64];
     int  err;
     MYSQL_RES * source_res;
     MYSQL_ROW source_row;
@@ -10791,7 +10821,7 @@ int mysql_execute_statement(
     if (!sql_cache_node->use_osc)
         print_warnings(thd, mysql, sql_cache_node);
 
-    if (mysql_fetch_thread_id(mysql, &sql_cache_node->thread_id))
+    if (mysql_fetch_thread_id(thd,mysql, &sql_cache_node->thread_id))
         DBUG_RETURN(true);
 
     time(&sql_cache_node->exec_time);
@@ -10822,9 +10852,12 @@ int mysql_execute_and_backup(THD *thd, MYSQL* mysql, sql_cache_node_t* sql_cache
             before_binlog_name, &before_binlog_pos))
             DBUG_RETURN(TRUE);
 
-        if (!mysql_check_binlog_format(thd, (char*)"ROW"))
-            if (mysql_modify_binlog_format_row(mysql))
-                DBUG_RETURN(TRUE);
+        // hcc 2018-10-24 中间件环境跳过binlog格式检查
+        if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0') {
+            if (!mysql_check_binlog_format(thd, (char*)"ROW"))
+                if (mysql_modify_binlog_format_row(mysql))
+                    DBUG_RETURN(TRUE);
+        }
     }
 
     if (mysql_execute_statement(thd, mysql, sql_cache_node->sql_statement, sql_cache_node))
