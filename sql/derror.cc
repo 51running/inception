@@ -69,21 +69,21 @@ bool init_errmessage(void)
 
 
   SERVER_SETMSG(ER_ERROR_FIRST, "HelloWorld");
-  SERVER_SETMSG(ER_NOT_SUPPORTED_YET, "Not supported statement type.");
-  SERVER_SETMSG(ER_SQL_NO_SOURCE, "The sql have no source information.");
-  SERVER_SETMSG(ER_SQL_NO_OP_TYPE, "The sql have no operation type.");
-  SERVER_SETMSG(ER_SQL_INVALID_OP_TYPE, "Invalid sql operation type.");
+  SERVER_SETMSG(ER_NOT_SUPPORTED_YET, "不支持的语法类型.");
+  SERVER_SETMSG(ER_SQL_NO_SOURCE, "sql没有源信息.");
+  SERVER_SETMSG(ER_SQL_NO_OP_TYPE, "sql没有操作类型设置.");
+  SERVER_SETMSG(ER_SQL_INVALID_OP_TYPE, "无效的sql操作类型.");
   SERVER_SETMSG(ER_PARSE_ERROR, "%s near \'%-.80s\' at line %d");
   SERVER_SETMSG(ER_SYNTAX_ERROR, "You have an error in your SQL syntax, ");
   SERVER_SETMSG(ER_REMOTE_EXE_ERROR, "Execute in source server failed.");
   SERVER_SETMSG(ER_SHUTDOWN_COMPLETE, "Shutdown complete.");
-  SERVER_SETMSG(ER_WITH_INSERT_FIELD, "Set the field list for insert statements.");
-  SERVER_SETMSG(ER_WITH_INSERT_VALUES, "Set the values list for insert statements.");
+  SERVER_SETMSG(ER_WITH_INSERT_FIELD, "insert语句需要指定字段列表.");
+  SERVER_SETMSG(ER_WITH_INSERT_VALUES, "insert语句需要指定值列表.");
   SERVER_SETMSG(ER_WRONG_VALUE_COUNT_ON_ROW, "Column count doesn\'t match value count at row %ld.");
   SERVER_SETMSG(ER_BAD_FIELD_ERROR, "Unknown column \'%-.192s\' in \'%-.192s\'.");
   SERVER_SETMSG(ER_FIELD_SPECIFIED_TWICE, "Column \'%-.192s\' specified twice in table \'%-.192s\'.");
   SERVER_SETMSG(ER_BAD_NULL_ERROR, "Column \'%-.192s\' cannot be null in %d row.");
-  SERVER_SETMSG(ER_NO_WHERE_CONDITION, "set the where condition for select statement.");
+  SERVER_SETMSG(ER_NO_WHERE_CONDITION, "selete语句请指定where条件.");
   SERVER_SETMSG(ER_NORMAL_SHUTDOWN, "%s: Normal shutdown\n");
   SERVER_SETMSG(ER_FORCING_CLOSE, "%s: Forcing close of thread %ld  user: \'%-.48s\'\n");
   SERVER_SETMSG(ER_CON_COUNT_ERROR, "Too many connections");
@@ -122,6 +122,7 @@ bool init_errmessage(void)
   SERVER_SETMSG(ER_TEMP_TABLE_TMP_PREFIX, "Set \'tmp\' prefix for temporary table.");
   SERVER_SETMSG(ER_TABLE_MUST_INNODB, "Set engine to innodb for table \'%-.64s\'.");
   SERVER_SETMSG(ER_TABLE_CHARSET_MUST_UTF8, "Set charset to one of \'%-.192s\' for table \'%-.64s\'.");
+  SERVER_SETMSG(ER_TABLE_CHARSET_MUST_NULL, "表 \'%-.64s\' 禁止设置字符集!");
   SERVER_SETMSG(ER_NAMES_MUST_UTF8, "Set charset to one of \'%-.192s\'.");
   SERVER_SETMSG(ER_TABLE_MUST_HAVE_COMMENT, "Set comments for table \'%-.192s\'.");
   SERVER_SETMSG(ER_COLUMN_HAVE_NO_COMMENT, "Column \'%-.64s\' in table \'%-.64s\' have no comments.");
@@ -169,16 +170,16 @@ bool init_errmessage(void)
   SERVER_SETMSG(ER_WRONG_ARGUMENTS, "Incorrect arguments to %s.");
   SERVER_SETMSG(ER_SET_DATA_TYPE_INT_BIGINT, "Set auto-increment data type to int or bigint.");
   SERVER_SETMSG(ER_TIMESTAMP_DEFAULT, "Set default value for timestamp column \'%-.64s\'.");
-  SERVER_SETMSG(ER_CHARSET_ON_COLUMN, "Cannot set charset on column \'%-.64s\' in table \'%-.64s\'.");
+  SERVER_SETMSG(ER_CHARSET_ON_COLUMN, "表 \'%-.64s\' 列 \'%-.64s\' 禁止设置字符集!");
   SERVER_SETMSG(ER_AUTO_INCR_ID_WARNING, "Auto increment column \'%-.64s\' is meaningful? it's dangerous!");
-  SERVER_SETMSG(ER_ALTER_TABLE_ONCE, "Merge the alter statement for table \'%-.64s\' to ONE.");
+  SERVER_SETMSG(ER_ALTER_TABLE_ONCE, "表 \'%-.64s\' 的多个alter操作请合并成一个.");
   SERVER_SETMSG(ER_BLOB_CANT_HAVE_DEFAULT, "BLOB/TEXT column \'%-.192s\' can\'t have a default value.");
   SERVER_SETMSG(ER_END_WITH_SEMICOLON, "Add \';\' after the last sql statement.");
   SERVER_SETMSG(ER_NON_UNIQ_ERROR, "Column \'%-.192s\' in %-.192s is ambiguous.");
   SERVER_SETMSG(ER_TABLE_NOT_EXISTED_ERROR, "Table \'%-.192s\' doesn't exist.");
   SERVER_SETMSG(ER_UNKNOWN_TABLE, "Unknown table \'%-.192s\' in %-.32s.");
   SERVER_SETMSG(ER_INVALID_GROUP_FUNC_USE, "Invalid use of group function.");
-  SERVER_SETMSG(ER_INDEX_USE_ALTER_TABLE, "Use Alter table statement to create index instead.");
+  SERVER_SETMSG(ER_INDEX_USE_ALTER_TABLE, "暂不支持create/drop index和rename语法,请使用alter语句替换.");
   SERVER_SETMSG(ER_WITH_DEFAULT_ADD_COLUMN, "Set Default value for column \'%-.192s\' in table \'%-.192s\'");
   SERVER_SETMSG(ER_TRUNCATED_WRONG_VALUE, "Truncated incorrect %-.32s value: \'%-.128s\'");
   SERVER_SETMSG(ER_TEXT_NOT_NULLABLE_ERROR, "TEXT/BLOB Column \'%-.64s\' in table \'%-.64s\' can't  been not null.");
@@ -200,6 +201,7 @@ bool init_errmessage(void)
   SERVER_SETMSG(ER_PK_COLS_NOT_INT, "Primary key column \'%s\' is not int or bigint type in table \'%s\'.\'%s\'.");
   SERVER_SETMSG(ER_PK_TOO_MANY_PARTS, "Too many primary key part in table \'%s\'.\'%s\', max parts: %d");
   SERVER_SETMSG(ER_REMOVED_SPACES, "Leading spaces are removed from name \'%s\'");
+  SERVER_SETMSG(ER_CHANGE_COLUMN_TYPE, "类型转换警告: 列 \'%-.64s\' %s -> %s.");
   SERVER_SETMSG(ER_ERROR_LAST, "TheLastError,ByeBye");
 
 	/* Register messages for use with my_error(). */
