@@ -31,8 +31,8 @@ else
   cd $debug_dir
 
   # cmake && make && make install
-  cmake -DWITH_DEBUG=OFF -DCMAKE_INSTALL_PREFIX=./mysql  -DMYSQL_DATADIR=./mysql/data \
-    -DWITH_SSL=bundled -DCMAKE_BUILD_TYPE=RELEASE -DWITH_ZLIB=bundled\
+  cmake -DWITH_DEBUG=OFF -DCMAKE_INSTALL_PREFIX=/usr/local/inception  -DMYSQL_DATADIR=/data \
+    -DWITH_SSL=bundled -DCMAKE_BUILD_TYPE=RELEASE -DWITH_ZLIB=bundled \
     -DMY_MAINTAINER_CXX_WARNINGS="-Wall -Wextra -Wunused -Wno-dev -Wwrite-strings -Wno-strict-aliasing  -Wno-unused-parameter -Woverloaded-virtual" \
     -DMY_MAINTAINER_C_WARNINGS="-Wall -Wextra -Wno-dev -Wunused -Wwrite-strings -Wno-strict-aliasing -Wdeclaration-after-statement" \
     $Gplatform\
