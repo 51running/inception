@@ -660,7 +660,7 @@ int mysql_cache_one_sql(THD* thd)
     }
 
     if (mysql_statement_is_backup(sql_cache_node))
-        mysql_get_remote_backup_dbname(thd->thd_sinfo->host, thd->thd_sinfo->port,
+        mysql_get_remote_backup_dbname(thd->thd_sinfo->backup_host, thd->thd_sinfo->backup_port,
                 sql_cache_node->dbname, sql_cache_node->backup_dbname);
     else
         sprintf(sql_cache_node->backup_dbname, "None");
@@ -981,6 +981,8 @@ int mysql_clear_execute_env(THD* thd)
     mysql_deinit_sql_cache(thd);
     thd->have_begin = FALSE;
     thd->thd_sinfo->host[0]='\0';
+    thd->thd_sinfo->dnid[0]='\0';
+
     thd->close_all_connections();
     DBUG_RETURN(false);
 }
@@ -2444,7 +2446,8 @@ int thd_parse_options(
     }
 
     sprintf(errmsg, "Invalid source infomation.");
-    global_source.password = global_source.user = NULL;
+    // hcc 2018-6-22 中间件节点id初始化为null
+    global_source.password = global_source.user = global_source.dnid = NULL ;
     ho_error = my_handle_options(&++i, &isql_option, my_isql_options, NULL, NULL, errmsg);
     isql_option--;
     if (ho_error)
@@ -2513,6 +2516,24 @@ int thd_parse_options(
     thd->thd_sinfo->ignore_warnings = global_source.ignore_warnings;
     thd->thd_sinfo->sleep_nms = global_source.sleep_nms;
     strcpy(thd->thd_sinfo->host, global_source.host);
+    if (global_source.dnid != NULL)
+    {
+        strcpy(thd->thd_sinfo->dnid, global_source.dnid);
+    }
+
+    // hcc 2018-8-23 写入备份库的主机和端口初始化,如果值为空,则使用host和port的值
+    if (global_source.backup_host == NULL || global_source.backup_port == 0)
+    {
+        strcpy(thd->thd_sinfo->backup_host, global_source.host);
+        thd->thd_sinfo->backup_port = global_source.port;
+    }
+    else
+    {
+        strcpy(thd->thd_sinfo->backup_host, global_source.backup_host);
+        thd->thd_sinfo->backup_port = global_source.backup_port;
+    }
+
+
     thd->thd_sinfo->port = global_source.port;
     thd->thd_sinfo->force = global_source.force;
     thd->thd_sinfo->backup = global_source.backup;
@@ -3302,20 +3323,44 @@ int mysql_check_insert_select_ex(THD *thd, table_info_t* table_info)
         str_select = str_init(&str);
         sql_statement = thd_query_with_length(thd);
         sql_p = sql_statement;
-        if (!mysql_check_version_56(thd))
+
+        // 2018-5-30 hcc 从此处开始
+        while (*sql_p)
         {
-            while (*sql_p)
+            if (strnicmp(sql_p, "select", 6) == 0)
             {
-                if (strnicmp(sql_p, "select", 6) == 0)
-                {
-                    found_where = true;
-                    break;
-                }
-                sql_p++;
+                found_where = true;
+                break;
             }
+            sql_p++;
         }
 
-        str_append(str_select, "EXPLAIN ");
+        // 2018-5-30 hcc 不再检查数据库版本.
+        // if (!mysql_check_version_56(thd))
+        // {
+        //     while (*sql_p)
+        //     {
+        //         if (strnicmp(sql_p, "select", 6) == 0)
+        //         {
+        //             found_where = true;
+        //             break;
+        //         }
+        //         sql_p++;
+        //     }
+        // }
+
+        // hcc 2018-10-23 中间件执行explain需要添加hint
+        if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0')
+        {
+            str_append(str_select, "EXPLAIN ");
+        }
+        else
+        {
+            str_append(str_select, "/*!HotDB:dnid=");
+            str_append(str_select, thd->thd_sinfo->dnid);
+            str_append(str_select, "*/EXPLAIN ");
+        }
+
         str_append(str_select, sql_p);
         my_free(sql_statement);
         if (mysql_get_explain_info(thd, mysql, str_get(str_select), &explain, TRUE, table_info->db_name))
@@ -3432,7 +3477,19 @@ mysql_make_select_sql(THD *thd, table_info_t* tableinfo, str_t* str_select)
         DBUG_RETURN(-1);
     }
 
-    str_append(str_select, "EXPLAIN ");
+    // hcc 2018-10-23 中间件执行explain需要添加hint
+    if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0')
+    {
+        str_append(str_select, "EXPLAIN ");
+    }
+    else
+    {
+        str_append(str_select, "/*!HotDB:dnid=");
+        str_append(str_select, thd->thd_sinfo->dnid);
+        str_append(str_select, "*/EXPLAIN ");
+    }
+
+    // str_append(str_select, "EXPLAIN ");
     str_append(str_select, "SELECT ");
     str_append(str_select, str_get(str));
     str_append(str_select, "FROM ");
@@ -3586,16 +3643,18 @@ mysql_get_explain_info(
 
     LIST_INIT(explain->field_lst);
 
-    sprintf(usedb, "use `%s`", dbname);
-    if (mysql_real_query(mysql, usedb, strlen(usedb)))
-    {
-        if (report_err) {
-            my_message(mysql_errno(mysql), mysql_error(mysql), MYF(0));
-            mysql_errmsg_append(thd);
-        }
+    // 2018-6-11 hcc 在做explain时,不再切换数据库
+    // (因为insert后的select语句可能不写库名,此时切库会出错)
+    // sprintf(usedb, "use `%s`", dbname);
+    // if (mysql_real_query(mysql, usedb, strlen(usedb)))
+    // {
+    //     if (report_err) {
+    //         my_message(mysql_errno(mysql), mysql_error(mysql), MYF(0));
+    //         mysql_errmsg_append(thd);
+    //     }
 
-        DBUG_RETURN(FALSE);
-    }
+    //     DBUG_RETURN(FALSE);
+    // }
 
     if (mysql_real_query(mysql, select_sql, strlen(select_sql)))
     {
@@ -3737,7 +3796,7 @@ int mysql_anlyze_explain(
     while (select_node != NULL)
     {
         if ((thd->lex->sql_command == SQLCOM_DELETE ||
-              thd->lex->sql_command == SQLCOM_UPDATE) && 
+              thd->lex->sql_command == SQLCOM_UPDATE) &&
               select_node->rows >= (int)inception_max_update_rows)
         {
             my_error(ER_UDPATE_TOO_MUCH_ROWS, MYF(0), inception_max_update_rows);
@@ -3779,7 +3838,20 @@ int mysql_explain_or_analyze_statement(
         if (mysql_check_version_56(thd))
         {
             sql_statement = thd_query_with_length(thd);
-            str_append(str_select, "EXPLAIN ");
+
+            // hcc 2018-10-23 中间件执行explain需要添加hint
+            if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0')
+            {
+                str_append(str_select, "EXPLAIN ");
+            }
+            else
+            {
+                str_append(str_select, "/*!HotDB:dnid=");
+                str_append(str_select, thd->thd_sinfo->dnid);
+                str_append(str_select, "*/EXPLAIN ");
+            }
+
+            // str_append(str_select, "EXPLAIN ");
             str_append(str_select, sql_statement);
             mysql_get_explain_info(thd, mysql, str_get(str_select), &explain, TRUE, table_info->db_name);
             my_free(sql_statement);
@@ -8137,7 +8209,7 @@ int mysql_operation_statistic(THD* thd)
 
 int mysql_make_sure_backupdb_table_exist(THD *thd, sql_cache_node_t* sql_cache_node)
 {
-    char  dbname[NAME_CHAR_LEN + 1];
+    char  dbname[NAME_CHAR_LEN + 1];;
     char  desc_sql[256];
     MYSQL*  mysql_remote;
     String  create_sql;
@@ -8148,7 +8220,7 @@ int mysql_make_sure_backupdb_table_exist(THD *thd, sql_cache_node_t* sql_cache_n
     if (sql_cache_node->table_info == NULL || sql_cache_node->table_info->remote_existed)
         DBUG_RETURN(FALSE);
 
-    if (mysql_get_remote_backup_dbname(thd->thd_sinfo->host, thd->thd_sinfo->port,
+    if (mysql_get_remote_backup_dbname(thd->thd_sinfo->backup_host, thd->thd_sinfo->backup_port,
         sql_cache_node->dbname, dbname))
         DBUG_RETURN(TRUE);
 
@@ -8344,7 +8416,15 @@ int mysql_fetch_master_binlog_position(
 
     DBUG_ENTER("mysql_fetch_master_binlog_position");
 
-    sprintf(desc_sql, "show master status;");
+    // hcc 2018-6-22 添加中间件支持
+    if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0')
+    {
+        sprintf(desc_sql, "show master status;");
+    }
+    else
+    {
+        sprintf(desc_sql, "/*!HotDB:dnid=%s*/show master status;",thd->thd_sinfo->dnid);
+    }
 
     err = mysql_real_query(mysql, desc_sql, strlen(desc_sql));
     if (err)
@@ -9492,7 +9572,7 @@ int mysql_generate_backup_sql_by_record_for_update_before(
     backup_sql->truncate();
 
     thd_sinfo = mi->thd->thd_sinfo;
-    if (mysql_get_remote_backup_dbname(thd_sinfo->host, thd_sinfo->port,
+    if (mysql_get_remote_backup_dbname(thd_sinfo->backup_host, thd_sinfo->backup_port,
         mi->table_info->db_name, dbname))
         DBUG_RETURN(true);
 
@@ -9557,7 +9637,7 @@ int mysql_generate_backup_sql_by_record(
     backup_sql->truncate();
 
     thd_sinfo = mi->thd->thd_sinfo;
-    if (mysql_get_remote_backup_dbname(thd_sinfo->host, thd_sinfo->port,
+    if (mysql_get_remote_backup_dbname(thd_sinfo->backup_host, thd_sinfo->backup_port,
         mi->table_info->db_name, dbname))
         DBUG_RETURN(true);
 
@@ -9778,7 +9858,16 @@ int mysql_fetch_thread_id(MYSQL *mysql, ulong* thread_id)
 
     DBUG_ENTER("mysql_fetch_thread_id");
 
-    sprintf(set_format, "select connection_id();");
+    // hcc 2018-6-22 添加中间件支持
+    if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0')
+    {
+        sprintf(set_format, "select connection_id();");
+    }
+    else
+    {
+        sprintf(set_format, "/*!HotDB:dnid=%s*/select connection_id();",thd->thd_sinfo->dnid);
+    }
+
     err = mysql_real_query(mysql, set_format, strlen(set_format));
     if (err)
     {
@@ -10045,14 +10134,14 @@ int mysql_backup_sql_for_ddl(
     //如果没有生成语句，则不备份
     if (str_get_len(sql_cache_node->ddl_rollback) == 0)
         DBUG_RETURN(false);
-        
+
     thd_sinfo = mi->thd->thd_sinfo;
-    if (mysql_get_remote_backup_dbname(thd_sinfo->host, thd_sinfo->port,
+    if (mysql_get_remote_backup_dbname(thd_sinfo->backup_host, thd_sinfo->backup_port,
         mi->table_info->db_name, dbname))
         DBUG_RETURN(true);
 
     backup_sql.append("INSERT INTO ");
-    sprintf(tmp_buf, "`%s`.`%s`(rollback_statement, opid_time) VALUES (", 
+    sprintf(tmp_buf, "`%s`.`%s`(rollback_statement, opid_time) VALUES (",
             dbname, mi->table_info->table_name);
     backup_sql.append(tmp_buf);
     mysql_generate_backup_field_insert_values_for_ddl(mi, &backup_sql, sql_cache_node);
@@ -10115,7 +10204,8 @@ int mysql_backup_single_statement(
         goto error;
 
     //如果影响行数是0行，则不通过binlog备份了，只做上面的操作日志备份
-    while (sql_cache_node->affected_rows)
+    // hcc 2018-6-22 如果是中间件,则跳过备份
+    while (sql_cache_node->affected_rows && (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0'))
     {
         ulong event_len;
 
@@ -10988,6 +11078,8 @@ int mysql_execute_commit(THD *thd)
 
         thd->have_begin = FALSE;
         thd->thd_sinfo->host[0]='\0';
+        thd->thd_sinfo->dnid[0]='\0';
+
         thd->close_all_connections();
         DBUG_RETURN(false);
     }
@@ -11006,9 +11098,12 @@ int mysql_execute_commit(THD *thd)
                 if (mysql_alloc_cache_table_record(thd, sql_cache))
                     goto error;
 
-                if (mysql_dump_binlog_from_first_statement(
-                        mi, thd->get_audit_connection(), sql_cache))
-                    goto error;
+                // hcc 2018-10-24 中间件时,跳过binlog解析
+                if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0') {
+                    if (mysql_dump_binlog_from_first_statement(
+                            mi, thd->get_audit_connection(), sql_cache))
+                        goto error;
+                }
 
                 sql_cache_node = LIST_GET_FIRST(sql_cache->field_lst);
                 while (sql_cache_node != NULL)
@@ -11018,9 +11113,13 @@ int mysql_execute_commit(THD *thd)
                         goto error;
 
                     //如果一条语句备份失败了，则要重新请求一次，对下一条语句做备份
-                    if(mysql_backup_sql(thd, mi, mysql, sql_cache_node) && next_sql_cache_node)
-                        mysql_request_binlog_dump(mysql, next_sql_cache_node->start_binlog_file,
-                          next_sql_cache_node->start_binlog_pos);
+                    if(mysql_backup_sql(thd, mi, mysql, sql_cache_node) && next_sql_cache_node){
+                        // hcc 2018-10-24 中间件时,跳过binlog解析
+                        if (thd->thd_sinfo->dnid == NULL || thd->thd_sinfo->dnid[0] == '\0') {
+                            mysql_request_binlog_dump(mysql, next_sql_cache_node->start_binlog_file,
+                              next_sql_cache_node->start_binlog_pos);
+                        }
+                    }
 
                     sql_cache_node = next_sql_cache_node;
                 }
@@ -11043,6 +11142,8 @@ error:
     delete mi;
     thd->have_begin = FALSE;
     thd->thd_sinfo->host[0]='\0';
+    thd->thd_sinfo->dnid[0]='\0';
+
     thd->close_all_connections();
     DBUG_RETURN(err);
 }
