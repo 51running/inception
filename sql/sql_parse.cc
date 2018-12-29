@@ -500,7 +500,7 @@ out:
 
 //to fix the bug ,thread_id from int to unsigned long
 void make_opid_time(char* tmp_buf,int exec_time,unsigned long thread_id,int seqno){
-    sprintf(tmp_buf, "\'%d_%lu_%d\'", exec_time,  thread_id, seqno);
+    sprintf(tmp_buf, "\'%d_%lu_%08d\'", exec_time,  thread_id, seqno);
 }
 
 int mysql_get_remote_backup_dbname(
