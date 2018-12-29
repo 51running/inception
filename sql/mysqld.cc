@@ -905,7 +905,7 @@ void set_remaining_args(int argc, char **argv)
   remaining_argc= argc;
   remaining_argv= argv;
 }
-/* 
+/*
   Multiple threads of execution use the random state maintained in global
   sql_rand to generate random numbers. sql_rnd_with_mutex use mutex
   LOCK_sql_rand to protect sql_rand across multiple instantiations that use
@@ -1177,7 +1177,7 @@ static void charset_error_reporter(enum loglevel level,
   va_list args;
   va_start(args, format);
   vprint_msg_to_log(level, format, args);
-  va_end(args);                      
+  va_end(args);
 }
 C_MODE_END
 
@@ -1943,7 +1943,7 @@ void print_sessions()
 				else
 					printf("%-10s", "Unknown DB");
 			}
-			
+
 			proc_info = NULL;
 			mysql_mutex_lock(&tmp->LOCK_thd_data);
 			if ((mysys_var= tmp->mysys_var))
@@ -1971,7 +1971,7 @@ void print_sessions()
 			{
 				printf("%-10s", "NULL");
 			}
-			
+
 			printf("\n");
 			mysql_mutex_unlock(&tmp->LOCK_thd_data);
 		}
@@ -2809,7 +2809,7 @@ void my_init_signals(void)
 //   int error;
 //   pthread_attr_t thr_attr;
 //   DBUG_ENTER("start_signal_handler");
-// 
+//
 //   (void) pthread_attr_init(&thr_attr);
 // #if !defined(HAVE_DEC_3_2_THREADS)
 //   pthread_attr_setscope(&thr_attr,PTHREAD_SCOPE_SYSTEM);
@@ -2824,7 +2824,7 @@ void my_init_signals(void)
 //   pthread_attr_setstacksize(&thr_attr,my_thread_stack_size);
 // #endif
 // #endif
-// 
+//
 //   mysql_mutex_lock(&LOCK_thread_count);
 //   if ((error= mysql_thread_create(key_thread_signal_hand,
 //                                   &signal_thread, &thr_attr, signal_hand, 0)))
@@ -2835,7 +2835,7 @@ void my_init_signals(void)
 //   }
 //   mysql_cond_wait(&COND_thread_count, &LOCK_thread_count);
 //   mysql_mutex_unlock(&LOCK_thread_count);
-// 
+//
 //   (void) pthread_attr_destroy(&thr_attr);
 //   DBUG_VOID_RETURN;
 // }
@@ -3352,10 +3352,10 @@ rpl_make_log_name(const char *opt,
     MY_REPLACE_EXT | MY_UNPACK_FILENAME | MY_SAFE_PATH;
 
   /* mysql_real_data_home_ptr  may be null if no value of datadir has been
-     specified through command-line or througha cnf file. If that is the 
+     specified through command-line or througha cnf file. If that is the
      case we make mysql_real_data_home_ptr point to mysql_real_data_home
      which, in that case holds the default path for data-dir.
-  */ 
+  */
   if(mysql_real_data_home_ptr == NULL)
     mysql_real_data_home_ptr= mysql_real_data_home;
 
@@ -3400,7 +3400,7 @@ int init_common_variables()
 
   mysql_mutex_init(NULL, &osc_mutex, MY_MUTEX_INIT_FAST);
   LIST_INIT(global_osc_cache.osc_lst);
-  
+
   mysql_mutex_init(NULL, &isql_option_mutex, MY_MUTEX_INIT_FAST);
   isql_option = (char**)my_malloc(sizeof(char*) * (ISQL_OPTION_COUNT + 2), MY_ZEROFILL);
   memset(&global_source, 0, sizeof(sinfo_t));
@@ -3557,7 +3557,7 @@ You should consider changing lower_case_table_names to 1 or 2",
       &my_charset_utf8_tolower_ci :
       &my_charset_bin);
 
-		
+
   init_update_queries();
   return 0;
 }
@@ -4818,21 +4818,21 @@ pthread_handler_t handle_connections_namedpipes(void *arg)
 //   my_thread_init();
 //   DBUG_ENTER("handle_connections_shared_memorys");
 //   DBUG_PRINT("general",("Waiting for allocated shared memory."));
-// 
+//
 //   /*
 //      get enough space base-name + '_' + longest suffix we might ever send
 //    */
 //   if (!(tmp= (char *)my_malloc(strlen(shared_memory_base_name) + 32L, MYF(MY_FAE))))
 //     goto error;
-// 
+//
 //   if (my_security_attr_create(&sa_event, &errmsg,
 //                               GENERIC_ALL, SYNCHRONIZE | EVENT_MODIFY_STATE))
 //     goto error;
-// 
+//
 //   if (my_security_attr_create(&sa_mapping, &errmsg,
 //                              GENERIC_ALL, FILE_MAP_READ | FILE_MAP_WRITE))
 //     goto error;
-// 
+//
 //   /*
 //     The name of event and file-mapping events create agree next rule:
 //       shared_memory_base_name+unique_part
@@ -4869,18 +4869,18 @@ pthread_handler_t handle_connections_namedpipes(void *arg)
 //     errmsg= "Could not create shared memory service";
 //     goto error;
 //   }
-// 
+//
 //   while (!abort_loop)
 //   {
 //     /* Wait a request from client */
 // //     WaitForSingleObject(smem_event_connect_request,INFINITE);
-// 
+//
 //     /*
 //        it can be after shutdown command
 //     */
 //     if (abort_loop)
 //       goto error;
-// 
+//
 //     HANDLE handle_client_file_map= 0;
 //     char  *handle_client_map= 0;
 //     HANDLE event_client_wrote= 0;
@@ -4889,7 +4889,7 @@ pthread_handler_t handle_connections_namedpipes(void *arg)
 //     HANDLE event_server_read= 0;
 //     HANDLE event_conn_closed= 0;
 //     THD *thd= 0;
-// 
+//
 //     p= int10_to_str(connect_number, connect_number_char, 10);
 //     /*
 //       The name of event and file-mapping events create agree next rule:
@@ -4982,7 +4982,7 @@ pthread_handler_t handle_connections_namedpipes(void *arg)
 //     create_new_thread(thd);
 //     connect_number++;
 //     continue;
-// 
+//
 // errorconn:
 //     /* Could not form connection;  Free used handlers/memort and retry */
 //     if (errmsg)
@@ -5008,12 +5008,12 @@ pthread_handler_t handle_connections_namedpipes(void *arg)
 //       CloseHandle(event_conn_closed);
 //     delete thd;
 //   }
-// 
+//
 //   /* End shared memory handling */
 // error:
 //   if (tmp)
 //     my_free(tmp);
-// 
+//
 //   if (errmsg)
 //   {
 //     char buff[180];
@@ -5122,36 +5122,51 @@ mysql_mutex_t	isql_option_mutex;
 
 struct my_option my_isql_options[]=
 {
-  {"host", 0, "remote server address.",	
-    &global_source.host, &global_source.host, 0, 
+  {"host", 0, "remote server address.",
+    &global_source.host, &global_source.host, 0,
     GET_STR_ALLOC, REQUIRED_ARG, 0, 0, 0, 0,	0, 0},
 
-  {"password", 0, "the user's password.",	
-    &global_source.password, &global_source.password, 0, 
+  {"password", 0, "the user's password.",
+    &global_source.password, &global_source.password, 0,
     GET_STR_ALLOC, REQUIRED_ARG, 0, 0, 0, 0, 0, 0},
 
-  {"user", 0, "login user.", 
-    &global_source.user, &global_source.user, 0, 
+  {"user", 0, "login user.",
+    &global_source.user, &global_source.user, 0,
     GET_STR_ALLOC,	REQUIRED_ARG, 0, 0, 0, 0, 0, 0},
 
-  {"port", 0, "mysql server's port.", 
-    &global_source.port, &global_source.port, 0, 
+  {"port", 0, "mysql server's port.",
+    &global_source.port, &global_source.port, 0,
     GET_INT,	REQUIRED_ARG, 0, 0, 0, 0, 0, 0},
 
-  {"check", 0, "to check.", 
-    &global_source.check, &global_source.check, 0, 
+  /* hcc 2018-6-22 */
+  {"dnid", 0, "middleware datanode id.",
+    &global_source.dnid, &global_source.dnid, 0,
+    GET_STR_ALLOC,  REQUIRED_ARG, 0, 0, 0, 0, 0, 0},
+
+  /* hcc add 2018-8-23 when use ssh proxy */
+  {"backup_host", 0, "remote server address with backup.",
+    &global_source.backup_host, &global_source.backup_host, 0,
+    GET_STR_ALLOC, REQUIRED_ARG, 0, 0, 0, 0,  0, 0},
+
+  /* hcc add 2018-8-23 when use ssh proxy */
+  {"backup_port", 0, "mysql server's port. with backup",
+    &global_source.backup_port, &global_source.backup_port, 0,
+    GET_INT,  REQUIRED_ARG, 0, 0, 0, 0, 0, 0},
+
+  {"check", 0, "to check.",
+    &global_source.check, &global_source.check, 0,
     GET_BOOL, NO_ARG, 0, 0, 0, 0, 0, 0},
 
-  {"execute", 0, "to execute.", 
-    &global_source.execute, &global_source.execute, 0, 
+  {"execute", 0, "to execute.",
+    &global_source.execute, &global_source.execute, 0,
     GET_BOOL, NO_ARG, 0, 0, 0, 0, 0, 0},
 
-  {"force", 0, "force to execute though exist error before.", 
-    &global_source.force, &global_source.force, 0, 
+  {"force", 0, "force to execute though exist error before.",
+    &global_source.force, &global_source.force, 0,
     GET_BOOL, NO_ARG, 0, 0, 0, 0, 0, 0},
 
   {"remote_backup", 0, "backup in execute.",
-    &global_source.backup, &global_source.backup, 0, 
+    &global_source.backup, &global_source.backup, 0,
     GET_BOOL, NO_ARG, 1, 0, 0, 0, 0, 0},
 
   {"ignore_warnings", 0, "ignore warnings in check stage when execute.",
@@ -5276,7 +5291,7 @@ static int show_flushstatustime(THD *thd, SHOW_VAR *var, char *buff)
 //   mysql_mutex_unlock(&LOCK_active_mi);
 //   return 0;
 // }
-// 
+//
 // static int show_slave_retried_trans(THD *thd, SHOW_VAR *var, char *buff)
 // {
 //   /*
@@ -5297,7 +5312,7 @@ static int show_flushstatustime(THD *thd, SHOW_VAR *var, char *buff)
 //   mysql_mutex_unlock(&LOCK_active_mi);
 //   return 0;
 // }
-// 
+//
 // static int show_slave_received_heartbeats(THD *thd, SHOW_VAR *var, char *buff)
 // {
 //   mysql_mutex_lock(&LOCK_active_mi);
@@ -5314,7 +5329,7 @@ static int show_flushstatustime(THD *thd, SHOW_VAR *var, char *buff)
 //   mysql_mutex_unlock(&LOCK_active_mi);
 //   return 0;
 // }
-// 
+//
 // static int show_slave_last_heartbeat(THD *thd, SHOW_VAR *var, char *buff)
 // {
 //   MYSQL_TIME received_heartbeat_time;
@@ -5327,7 +5342,7 @@ static int show_flushstatustime(THD *thd, SHOW_VAR *var, char *buff)
 //       buff[0]='\0';
 //     else
 //     {
-//       thd->variables.time_zone->gmt_sec_to_TIME(&received_heartbeat_time, 
+//       thd->variables.time_zone->gmt_sec_to_TIME(&received_heartbeat_time,
 //         active_mi->last_heartbeat);
 //       my_datetime_to_str(&received_heartbeat_time, buff, 0);
 //     }
@@ -5337,7 +5352,7 @@ static int show_flushstatustime(THD *thd, SHOW_VAR *var, char *buff)
 //   mysql_mutex_unlock(&LOCK_active_mi);
 //   return 0;
 // }
-// 
+//
 // static int show_heartbeat_period(THD *thd, SHOW_VAR *var, char *buff)
 // {
 //   mysql_mutex_lock(&LOCK_active_mi);
@@ -5352,23 +5367,23 @@ static int show_flushstatustime(THD *thd, SHOW_VAR *var, char *buff)
 //   mysql_mutex_unlock(&LOCK_active_mi);
 //   return 0;
 // }
-// 
+//
 // #ifndef DBUG_OFF
 // static int show_slave_rows_last_search_algorithm_used(THD *thd, SHOW_VAR *var, char *buff)
 // {
 //   uint res= slave_rows_last_search_algorithm_used;
 //   const char* s= ((res == Rows_log_event::ROW_LOOKUP_TABLE_SCAN) ? "TABLE_SCAN" :
-//                   ((res == Rows_log_event::ROW_LOOKUP_HASH_SCAN) ? "HASH_SCAN" : 
+//                   ((res == Rows_log_event::ROW_LOOKUP_HASH_SCAN) ? "HASH_SCAN" :
 //                    "INDEX_SCAN"));
-// 
+//
 //   var->type= SHOW_CHAR;
 //   var->value= buff;
 //   sprintf(buff, "%s", s);
-// 
+//
 //   return 0;
 // }
 // #endif
-// 
+//
 // #endif /* HAVE_REPLICATION */
 
 static int show_open_tables(THD *thd, SHOW_VAR *var, char *buff)
@@ -6223,7 +6238,7 @@ static int fix_paths(void)
   (void) my_load_path(mysql_real_data_home,mysql_real_data_home,mysql_home);
   (void) my_load_path(pidfile_name, pidfile_name_ptr, mysql_real_data_home);
 
-  convert_dirname(opt_plugin_dir, opt_plugin_dir_ptr ? opt_plugin_dir_ptr : 
+  convert_dirname(opt_plugin_dir, opt_plugin_dir_ptr ? opt_plugin_dir_ptr :
                                   get_relative_path(PLUGINDIR), NullS);
   (void) my_load_path(opt_plugin_dir, opt_plugin_dir, mysql_home);
   opt_plugin_dir_ptr= opt_plugin_dir;
