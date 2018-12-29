@@ -130,9 +130,13 @@
 #define ER_INVALID_IDENT                    2627
 #define ER_INCEPTION_EMPTY_QUERY            2628
 #define ER_PK_COLS_NOT_INT                  2629
-#define ER_PK_TOO_MANY_PARTS                2630 
+#define ER_PK_TOO_MANY_PARTS                2630
 #define ER_REMOVED_SPACES                   2631
-#define ER_ERROR_LAST                       2632
+// 2018-4-11 hcc 添加新的异常
+#define ER_TABLE_CHARSET_MUST_NULL          2632
+// 2018-9-12 hcc 修改列类型时,禁止类型转换
+#define ER_CHANGE_COLUMN_TYPE               2633
+#define ER_ERROR_LAST                       2634
 
 #define ER_WARNING 1000
 #define ER_NISAMCHK 1001
