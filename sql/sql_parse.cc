@@ -4768,8 +4768,24 @@ int mysql_check_db_existed(
     dbinfo = LIST_GET_FIRST(thd->dbcache.dbcache_lst);
     while (dbinfo != NULL)
     {
-        if (!strcasecmp(dbinfo->dbname, db_name))
+        if (!strcasecmp(dbinfo->dbname, db_name)){
+
+            if ((mysql = thd->get_audit_connection()) == NULL)
+                DBUG_RETURN(true);
+            // 2019-1-9 hcc 之前由于use未切换库,所以移除了库名缓存
+            // 现调整为继续缓存,在库已存在时,如果是use命令,做一次切换.
+            if (thd->lex->sql_command == SQLCOM_CHANGE_DB)
+            {
+                sprintf(desc_sql, "use `%s`",db_name);
+                if (mysql_real_query(mysql, desc_sql, strlen(desc_sql)))
+                {
+                    my_message(mysql_errno(mysql), mysql_error(mysql), MYF(0));
+                    DBUG_RETURN(true);
+                }
+            }
+
             DBUG_RETURN(FALSE);
+        }
 
         dbinfo = LIST_GET_NEXT(link, dbinfo);
     }
@@ -4795,9 +4811,11 @@ int mysql_check_db_existed(
     while (source_row != NULL)
     {
         // 2018-6-12 hcc 不再缓存库名
-        // dbinfo = (dbinfo_t*)my_malloc(sizeof(dbinfo_t), MYF(MY_ZEROFILL));
-        // sprintf(dbinfo->dbname, "%s", source_row[0]);
-        // LIST_ADD_LAST(link, thd->dbcache.dbcache_lst, dbinfo);
+        // 2019-1-9 hcc 之前由于use未切换库,所以移除了库名缓存
+        // 现调整为继续缓存,在库已存在时,如果是use命令,做一次切换.
+        dbinfo = (dbinfo_t*)my_malloc(sizeof(dbinfo_t), MYF(MY_ZEROFILL));
+        sprintf(dbinfo->dbname, "%s", source_row[0]);
+        LIST_ADD_LAST(link, thd->dbcache.dbcache_lst, dbinfo);
 
         if (strcasecmp(source_row[0], db_name) == 0)
         {
