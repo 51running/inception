@@ -5555,7 +5555,8 @@ int mysql_check_add_column(THD *thd)
         }
 
         field_info_new = mysql_cache_new_column(table_info, field);
-        if (field->after)
+
+        if (field->after && field->after != first_keyword)
         {
             field_info = LIST_GET_FIRST(table_info->field_lst);
             while (field_info)
